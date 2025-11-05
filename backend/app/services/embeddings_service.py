@@ -18,23 +18,26 @@ class EmbeddingsService:
     def _initialize_model(self):
         """Initialize the embeddings model"""
         try:
-            print(f"Loading embeddings model: {self.model_name} on {self.device}")
-            # Load model on CPU first, then move to device if needed
-            # This avoids the "Cannot copy out of meta tensor" error
-            self.model = SentenceTransformer(self.model_name, device='cpu')
+            print(f"Loading embeddings model: {self.model_name}")
+            print(f"Target device: {self.device}")
 
-            # Move to target device if not CPU
-            if self.device != 'cpu':
-                try:
-                    self.model = self.model.to(self.device)
-                except Exception as device_error:
-                    print(f"Warning: Could not move model to {self.device}: {device_error}")
-                    print("Continuing with CPU device")
-                    self.device = 'cpu'
+            # Force CPU for compatibility - avoid meta tensor issues
+            # Modern versions of torch/transformers can have device transfer issues
+            self.device = 'cpu'
 
-            print(f"Embeddings model loaded successfully on {self.device}")
+            # Load model directly on CPU with explicit parameters
+            self.model = SentenceTransformer(
+                self.model_name,
+                device=self.device,
+                cache_folder=None  # Use default cache
+            )
+
+            print(f"✓ Embeddings model loaded successfully on {self.device}")
+
         except Exception as e:
-            print(f"Error loading embeddings model: {e}")
+            print(f"✗ Error loading embeddings model: {e}")
+            import traceback
+            traceback.print_exc()
             raise
 
     def encode_text(self, text: Union[str, List[str]]) -> np.ndarray:

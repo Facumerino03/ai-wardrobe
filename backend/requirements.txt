@@ -6,10 +6,10 @@ python-dotenv==1.0.1
 # Database
 chromadb==0.4.22
 
-# ML & Embeddings (versiones compatibles)
-sentence-transformers==3.2.1
-torch==2.6.0
-torchvision==0.21.0
+# ML & Embeddings (versiones compatibles y estables)
+sentence-transformers==2.2.2
+torch==2.0.1
+torchvision==0.15.2
 Pillow==10.4.0
 
 # OpenRouter API
