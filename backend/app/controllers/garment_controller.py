@@ -67,7 +67,8 @@ def create_garment():
         file.save(file_path)
 
         # Resize image for optimization
-        resized_path = os.path.join(Config.UPLOAD_FOLDER, f"resized_{filename}")
+        resized_filename = f"resized_{filename}"
+        resized_path = os.path.join(Config.UPLOAD_FOLDER, resized_filename)
         resize_image(file_path, resized_path, max_size=(800, 800))
 
         # Auto-detect color if not provided
@@ -79,6 +80,7 @@ def create_garment():
                 garment_data['color'] = 'unknown'
 
         # Create garment object
+        # IMPORTANT: Store only the filename, not the full path
         garment = Garment(
             user_id=user_id,
             name=name,
@@ -86,7 +88,7 @@ def create_garment():
             color=garment_data['color'],
             style=style,
             season=season,
-            image_path=resized_path,
+            image_path=resized_filename,  # Store only filename, not full path
             description=description,
             tags=tags
         )
@@ -237,10 +239,15 @@ def update_garment(garment_id):
         garment.update_timestamp()
 
         # Update in ChromaDB
+        # Build full path for embedding if only filename is stored
+        full_image_path = garment.image_path
+        if not os.path.isabs(full_image_path):
+            full_image_path = os.path.join(Config.UPLOAD_FOLDER, garment.image_path)
+
         chroma_service.update_garment(
             garment_id=garment_id,
             garment_data=garment.to_dict(),
-            image_path=garment.image_path
+            image_path=full_image_path
         )
 
         return jsonify({
@@ -290,6 +297,15 @@ def serve_image(filename):
     """Serve uploaded images"""
     try:
         from flask import make_response
+        import pathlib
+
+        # Handle cases where full paths are stored (Windows/Unix)
+        # Extract just the filename from the path
+        if '/' in filename or '\\' in filename:
+            # This is a full path, extract just the filename
+            filename = pathlib.Path(filename).name
+            print(f"Extracted filename from full path: {filename}")
+
         response = make_response(send_from_directory(Config.UPLOAD_FOLDER, filename))
         # Add CORS headers explicitly for images
         response.headers['Access-Control-Allow-Origin'] = '*'
@@ -298,6 +314,7 @@ def serve_image(filename):
         response.headers['Cache-Control'] = 'public, max-age=31536000'
         return response
     except FileNotFoundError:
+        print(f"Image file not found: {filename}")
         return jsonify({'error': 'Image not found'}), 404
     except Exception as e:
         print(f"Error serving image {filename}: {e}")

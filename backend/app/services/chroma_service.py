@@ -51,23 +51,37 @@ class ChromaService:
 
         Args:
             garment_id: Unique garment identifier
-            garment_data: Dictionary containing garment metadata
-            image_path: Path to garment image
+            garment_data: Dictionary containing garment metadata (should have image_path as filename only)
+            image_path: Full path to garment image for embedding generation
         """
         try:
-            # Asegurarse de que image_path esté en garment_data
-            garment_data['image_path'] = image_path
-            
+            import os
+            import pathlib
+
+            # Keep the original image_path from garment_data (should be filename only)
+            # If it doesn't have one, extract filename from the provided path
+            if 'image_path' not in garment_data or not garment_data['image_path']:
+                garment_data['image_path'] = pathlib.Path(image_path).name
+
+            # Build full path if needed for embedding generation
+            if not os.path.isabs(image_path):
+                # If relative path provided, make it absolute
+                from config.config import Config
+                full_image_path = os.path.join(Config.UPLOAD_FOLDER, image_path)
+            else:
+                full_image_path = image_path
+
             # Generate text description for embedding
             text_description = self._create_text_description(garment_data)
 
             # Generate multimodal embedding (text + image)
             embedding = self.embeddings_service.encode_multimodal(
                 text=text_description,
-                image_path=image_path
+                image_path=full_image_path  # Use full path for embedding
             )
 
             # Prepare metadata (ChromaDB requires string values)
+            # Store only filename in metadata, not full path
             metadata = {
                 'name': garment_data.get('name', ''),
                 'category': garment_data.get('category', ''),
@@ -76,7 +90,7 @@ class ChromaService:
                 'season': ','.join(garment_data.get('season', [])),
                 'tags': ','.join(garment_data.get('tags', [])),
                 'user_id': garment_data.get('user_id', ''),
-                'image_path': image_path,
+                'image_path': garment_data.get('image_path', ''),  # Only filename
                 'data': json.dumps(garment_data)  # Store full data as JSON
             }
 
@@ -200,7 +214,14 @@ class ChromaService:
             return None
 
     def update_garment(self, garment_id: str, garment_data: Dict, image_path: str):
-        """Update an existing garment"""
+        """
+        Update an existing garment
+
+        Args:
+            garment_id: Unique garment identifier
+            garment_data: Dictionary containing garment metadata (with filename only in image_path)
+            image_path: Path to garment image (can be full path or filename)
+        """
         try:
             # Delete old entry
             self.delete_garment(garment_id)

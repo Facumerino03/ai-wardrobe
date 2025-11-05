@@ -19,8 +19,20 @@ class EmbeddingsService:
         """Initialize the embeddings model"""
         try:
             print(f"Loading embeddings model: {self.model_name} on {self.device}")
-            self.model = SentenceTransformer(self.model_name, device=self.device)
-            print("Embeddings model loaded successfully")
+            # Load model on CPU first, then move to device if needed
+            # This avoids the "Cannot copy out of meta tensor" error
+            self.model = SentenceTransformer(self.model_name, device='cpu')
+
+            # Move to target device if not CPU
+            if self.device != 'cpu':
+                try:
+                    self.model = self.model.to(self.device)
+                except Exception as device_error:
+                    print(f"Warning: Could not move model to {self.device}: {device_error}")
+                    print("Continuing with CPU device")
+                    self.device = 'cpu'
+
+            print(f"Embeddings model loaded successfully on {self.device}")
         except Exception as e:
             print(f"Error loading embeddings model: {e}")
             raise
