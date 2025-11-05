@@ -14,12 +14,13 @@ def create_app(config_name='development'):
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
 
-    # Enable CORS
+    # Enable CORS - allow all origins for development
     CORS(app, resources={
-        r"/api/*": {
+        r"/*": {
             "origins": "*",
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization"]
+            "allow_headers": ["Content-Type", "Authorization"],
+            "expose_headers": ["Content-Type", "Content-Length"]
         }
     })
 
@@ -48,5 +49,15 @@ def create_app(config_name='development'):
     @app.route('/health')
     def health():
         return {'status': 'healthy'}, 200
+
+    # Additional static file serving route for images
+    from flask import send_from_directory
+    import os
+
+    @app.route('/static/uploads/<path:filename>')
+    def serve_upload(filename):
+        """Serve uploaded files directly"""
+        upload_folder = app.config.get('UPLOAD_FOLDER') or config[config_name].UPLOAD_FOLDER
+        return send_from_directory(upload_folder, filename)
 
     return app

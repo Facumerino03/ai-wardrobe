@@ -13,10 +13,20 @@ class LLMService:
         self.base_url = Config.OPENROUTER_BASE_URL
 
         # Initialize OpenAI client with OpenRouter configuration
-        self.client = OpenAI(
-            api_key=self.api_key,
-            base_url=self.base_url
-        )
+        # Note: Some versions of openai library don't support certain parameters
+        try:
+            self.client = OpenAI(
+                api_key=self.api_key,
+                base_url=self.base_url,
+                http_client=None  # Explicitly set to None to avoid proxy issues
+            )
+        except TypeError as e:
+            # Fallback for older versions that don't accept http_client
+            print(f"Warning: {e}")
+            self.client = OpenAI(
+                api_key=self.api_key,
+                base_url=self.base_url
+            )
 
         print(f"LLM Service initialized with model: {self.model}")
 

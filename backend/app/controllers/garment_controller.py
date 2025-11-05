@@ -289,6 +289,16 @@ def delete_garment(garment_id):
 def serve_image(filename):
     """Serve uploaded images"""
     try:
-        return send_from_directory(Config.UPLOAD_FOLDER, filename)
-    except Exception as e:
+        from flask import make_response
+        response = make_response(send_from_directory(Config.UPLOAD_FOLDER, filename))
+        # Add CORS headers explicitly for images
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        response.headers['Cache-Control'] = 'public, max-age=31536000'
+        return response
+    except FileNotFoundError:
         return jsonify({'error': 'Image not found'}), 404
+    except Exception as e:
+        print(f"Error serving image {filename}: {e}")
+        return jsonify({'error': 'Error serving image'}), 500
