@@ -9,7 +9,8 @@ from app.services.embeddings_service import get_embeddings_service
 class ChromaService:
     """Service for managing ChromaDB operations"""
 
-    def __init__(self):
+    def __init__(self, persist_directory='./data/chroma_db'):
+        # Solo inicializar variables, no crear el cliente aquí
         self.persist_directory = Config.CHROMA_PERSIST_DIRECTORY
         self.collection_name = Config.CHROMA_COLLECTION_NAME
         self.client = None
@@ -22,11 +23,12 @@ class ChromaService:
         try:
             print(f"Initializing ChromaDB at: {self.persist_directory}")
 
-            # Create ChromaDB client with persistence
+            # Create ChromaDB client with persistence - SOLO UNA VEZ
             self.client = chromadb.PersistentClient(
                 path=self.persist_directory,
                 settings=Settings(
-                    anonymized_telemetry=False
+                    anonymized_telemetry=False,
+                    allow_reset=True
                 )
             )
 
@@ -53,6 +55,9 @@ class ChromaService:
             image_path: Path to garment image
         """
         try:
+            # Asegurarse de que image_path esté en garment_data
+            garment_data['image_path'] = image_path
+            
             # Generate text description for embedding
             text_description = self._create_text_description(garment_data)
 
@@ -180,7 +185,13 @@ class ChromaService:
 
             if result['ids']:
                 metadata = result['metadatas'][0]
-                return json.loads(metadata.get('data', '{}'))
+                garment_data = json.loads(metadata.get('data', '{}'))
+                
+                # Asegurarse de que image_path esté en el garment_data
+                if 'image_path' not in garment_data and 'image_path' in metadata:
+                    garment_data['image_path'] = metadata['image_path']
+                
+                return garment_data
 
             return None
 

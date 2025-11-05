@@ -100,6 +100,14 @@ class EmbeddingsService:
             text_embedding = self.encode_text(text)
             image_embedding = self.encode_image(image_path)
 
+            # Si text_embedding es 2D (por ejemplo, shape (1, 512)), aplanarlo
+            if text_embedding.ndim > 1:
+                text_embedding = text_embedding.flatten()
+            
+            # Si image_embedding es 2D, aplanarlo también
+            if image_embedding.ndim > 1:
+                image_embedding = image_embedding.flatten()
+
             # Average the embeddings
             combined = (text_embedding + image_embedding) / 2
 

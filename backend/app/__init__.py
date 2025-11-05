@@ -6,7 +6,9 @@ from config import config
 def create_app(config_name='development'):
     """Application factory pattern"""
 
-    app = Flask(__name__)
+    app = Flask(__name__,
+                static_folder='static',
+                static_url_path='/static')
 
     # Load configuration
     app.config.from_object(config[config_name])
