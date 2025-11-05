@@ -55,7 +55,11 @@ const OutfitSuggestions = () => {
 
   const getGarmentImageUrl = (path) => {
     if (!path) return 'https://via.placeholder.com/150';
-    const filename = path.split('/').pop();
+
+    // Handle both Windows and Unix paths
+    const normalizedPath = path.replace(/\\/g, '/');
+    const filename = normalizedPath.split('/').pop();
+
     return `http://localhost:5000/api/garments/images/${filename}`;
   };
 

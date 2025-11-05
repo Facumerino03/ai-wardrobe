@@ -297,14 +297,26 @@ def serve_image(filename):
     """Serve uploaded images"""
     try:
         from flask import make_response
+        from urllib.parse import unquote
         import pathlib
+        import re
+
+        # Decode URL-encoded characters (e.g., %20 -> space)
+        filename = unquote(filename)
+
+        print(f"[serve_image] Received filename: {filename}")
 
         # Handle cases where full paths are stored (Windows/Unix)
-        # Extract just the filename from the path
-        if '/' in filename or '\\' in filename:
+        # Check if this looks like an absolute path
+        # Windows: C:/ or D:/ etc., Unix: starts with /
+        is_absolute = re.match(r'^[A-Za-z]:', filename) or filename.startswith('/')
+
+        if is_absolute or '/' in filename or '\\' in filename:
             # This is a full path, extract just the filename
-            filename = pathlib.Path(filename).name
-            print(f"Extracted filename from full path: {filename}")
+            # Replace backslashes with forward slashes for consistent handling
+            normalized = filename.replace('\\', '/')
+            filename = normalized.split('/')[-1]
+            print(f"[serve_image] Extracted filename from full path: {filename}")
 
         response = make_response(send_from_directory(Config.UPLOAD_FOLDER, filename))
         # Add CORS headers explicitly for images
@@ -314,8 +326,10 @@ def serve_image(filename):
         response.headers['Cache-Control'] = 'public, max-age=31536000'
         return response
     except FileNotFoundError:
-        print(f"Image file not found: {filename}")
+        print(f"[serve_image] Image file not found: {filename}")
         return jsonify({'error': 'Image not found'}), 404
     except Exception as e:
-        print(f"Error serving image {filename}: {e}")
+        print(f"[serve_image] Error serving image {filename}: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': 'Error serving image'}), 500

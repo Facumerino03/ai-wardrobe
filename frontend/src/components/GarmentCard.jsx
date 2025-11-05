@@ -3,7 +3,12 @@ import { Trash2, Edit } from 'lucide-react';
 const GarmentCard = ({ garment, onDelete, onEdit, onSelect, isSelected }) => {
   const getImagePath = (path) => {
     if (!path) return '/placeholder.jpg';
-    const filename = path.split('/').pop();
+
+    // Handle both Windows and Unix paths
+    // Replace backslashes with forward slashes for consistency
+    const normalizedPath = path.replace(/\\/g, '/');
+    const filename = normalizedPath.split('/').pop();
+
     return `http://localhost:5000/api/garments/images/${filename}`;
   };
 
