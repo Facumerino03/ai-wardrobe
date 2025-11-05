@@ -58,11 +58,12 @@ app/static/generated/*
 .coverage
 htmlcov/
 
-# Models (if you download any large ML models)
+# ML Models (if you download any large ML models)
 *.pth
 *.pt
 *.bin
-models/
+/models/
+ml_models/
 
 # Jupyter Notebooks
 .ipynb_checkpoints
