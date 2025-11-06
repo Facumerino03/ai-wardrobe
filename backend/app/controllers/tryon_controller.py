@@ -56,10 +56,22 @@ def generate_tryon():
         if not garment:
             return jsonify({'error': 'Garment not found'}), 404
 
-        garment_image_path = garment.get('image_path')
+        garment_image_filename = garment.get('image_path')
 
-        if not garment_image_path or not os.path.exists(garment_image_path):
-            return jsonify({'error': 'Garment image not found'}), 404
+        if not garment_image_filename:
+            return jsonify({'error': 'Garment image path not found in database'}), 404
+
+        # Build full path from filename
+        # The image_path stored in ChromaDB is just the filename, not the full path
+        if os.path.isabs(garment_image_filename):
+            # If it's already an absolute path, use it as is
+            garment_image_path = garment_image_filename
+        else:
+            # Build full path by combining with upload folder
+            garment_image_path = os.path.join(Config.UPLOAD_FOLDER, garment_image_filename)
+
+        if not os.path.exists(garment_image_path):
+            return jsonify({'error': f'Garment image file not found at {garment_image_path}'}), 404
 
         # Generate output path
         output_filename = f"tryon_{uuid.uuid4()}.png"
